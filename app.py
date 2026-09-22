@@ -1,11 +1,3 @@
-"""app.py
-
-Streamlit web app for the FX / Currency Converter. This file builds
-the user interface, collects user input, calls the other project
-modules to do the real work, and displays the results or any errors.
-It does not make HTTP requests or perform calculations itself.
-"""
-
 from datetime import date
 
 import streamlit as st

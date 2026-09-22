@@ -1,9 +1,6 @@
-"""frankfurter.py
-
-Functions for talking to the Frankfurter currency API
-(https://www.frankfurter.app/). Each function calls one endpoint and
-pulls out the values the rest of the app needs. The actual HTTP work
-is done by api.py.
+"""
+Functions for talking to the Frankfurter currency API (https://www.frankfurter.app/). 
+Each function calls one endpoint and pulls out the values the rest of the app needs. 
 """
 
 from datetime import date

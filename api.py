@@ -1,11 +1,3 @@
-"""api.py
-
-Generic helper for making HTTP GET requests and turning network or
-response problems into a single, simple exception type. This module
-knows nothing about Frankfurter specifically - frankfurter.py reuses
-it to talk to that particular API.
-"""
-
 import requests
 
 

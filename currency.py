@@ -1,34 +1,10 @@
-"""currency.py
-
-Functions for converting an amount using a conversion rate,
-calculating the inverse rate, and formatting the final message shown
-to the user in the Streamlit app.
-"""
-
-
 def convert_amount(amount, rate):
-    """Convert an amount from one currency to another.
-
-    Args:
-        amount (float): The amount in the source currency.
-        rate (float): The conversion rate (source -> destination).
-
-    Returns:
-        float: The converted amount.
-    """
+    """Convert an amount from one currency to another."""
     return amount * rate
 
 
 def calculate_inverse_rate(rate):
-    """Calculate the inverse of a conversion rate.
-
-    Args:
-        rate (float): The conversion rate (source -> destination).
-
-    Returns:
-        float: The inverse rate (destination -> source). Returns 0.0
-            if the rate is 0, to avoid dividing by zero.
-    """
+    """Calculate the inverse of a conversion rate."""
     if rate == 0:
         return 0.0
     return 1 / rate
