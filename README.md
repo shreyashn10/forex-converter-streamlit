@@ -4,7 +4,7 @@
 
 - **Full Name:** Shreyash Narayane
 - **Student ID:** 25934391
-- **Subject:** Data Science Practice (DSP) — Assignment 2, Building a Currency Converter in Python
+- **Subject:** Data Science Practice (DSP) : Assignment 2, Building a Currency Converter in Python
 
 ## Description
 

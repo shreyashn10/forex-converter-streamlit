@@ -1,11 +1,3 @@
-"""app.py
-
-Streamlit web app for the FX / Currency Converter. This file builds
-the user interface, collects user input, calls the other project
-modules to do the real work, and displays the results or any errors.
-It does not make HTTP requests or perform calculations itself.
-"""
-
 from datetime import date, timedelta
 
 import pandas as pd
@@ -20,7 +12,7 @@ from frankfurter import (
 )
 from currency import convert_amount, format_conversion_result
 
-# How far back the "Rate Trend" chart looks, in days (roughly 3 years).
+# How far back the "Rate Trend" chart looks, in days (last 3 years).
 TREND_PERIOD_DAYS = 3 * 365
 
 st.title("FX Converter")
