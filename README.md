@@ -4,7 +4,7 @@
 
 - **Full Name:** Shreyash Narayane
 - **Student ID:** 25934391
-- **Subject:** Data Science Practice (DSP) - Assignment 2, Building a Currency Converter in Python
+- **Subject:** Data Science Practice (DSP) — Assignment 2, Building a Currency Converter in Python
 
 ## Description
 
@@ -20,7 +20,8 @@ The app lets the user:
   of currencies supported by Frankfurter (fetched from the API, not
   hard-coded).
 - Click **Get Latest Rate** to see today's conversion rate, the converted
-  amount, and the inverse rate.
+  amount, the inverse rate, and a line chart of that rate's trend over
+  roughly the last 3 years.
 - Pick a past date and click **Get Historical Rate** to see the conversion
   rate that applied on that date instead.
 
@@ -66,9 +67,6 @@ calculation logic.
 
 ### Future improvements
 
-- Show the rate trend chart over time (as pictured in the assignment
-  brief) using Frankfurter's time-series endpoint
-  (`/<start_date>..<end_date>`), plotted with `st.line_chart`.
 - Add a "swap currencies" button to quickly reverse the From/To selection.
 - Cache historical results per currency pair and date so repeated lookups
   don't re-call the API.
@@ -83,7 +81,7 @@ calculation logic.
 
 ### Requirements
 
-- **Python:** 3.9 or later (developed and tested with Python 3.14)
+- **Python:** 3.9 or later (developed and tested with Python 3.10.12)
 - **pip:** for installing dependencies
 
 ### Dependencies
@@ -92,11 +90,14 @@ calculation logic.
 |---|---|---|
 | [`streamlit`](https://streamlit.io/) | 1.63.0 | Builds the web app interface |
 | [`requests`](https://docs.python-requests.org/) | 2.34.2 | Makes HTTP GET requests to the Frankfurter API |
+| [`pandas`](https://pandas.pydata.org/) | 2.3.3 | Shapes the historical rate series for the trend chart (`st.line_chart`) |
 
-Newer minor versions of both packages should also work, since the app
-only uses stable, long-standing features of each (`st.number_input`,
-`st.selectbox`, `st.date_input`, `st.button`, `st.cache_data`, and
-`requests.get`).
+`pandas` is already installed automatically as a dependency of
+`streamlit`, so no extra install step is needed beyond the command below.
+Newer minor versions of all three packages should also work, since the
+app only uses stable, long-standing features of each (`st.number_input`,
+`st.selectbox`, `st.date_input`, `st.button`, `st.cache_data`,
+`st.line_chart`, `requests.get`, and `pandas.Series`).
 
 ### Setup steps
 
@@ -118,13 +119,13 @@ only uses stable, long-standing features of each (`st.number_input`,
 3. Install the two dependencies, either individually:
 
    ```bash
-   pip install streamlit==1.63.0 requests==2.34.2
+   pip install streamlit==1.63.0 requests==2.34.2 pandas==2.3.3
    ```
 
    or without pinning versions (installs the latest compatible ones):
 
    ```bash
-   pip install streamlit requests
+   pip install streamlit requests pandas
    ```
 
 4. Confirm the install worked:
@@ -161,7 +162,8 @@ only uses stable, long-standing features of each (`st.number_input`,
      starts).
    - Click **Get Latest Rate** to see the current conversion rate, the
      converted amount, and the inverse rate, displayed as a sentence
-     below the button.
+     below the button, followed by a "Rate Trend Over the Last 3 years"
+     line chart for that currency pair.
    - To check a past rate instead, pick a date using the **date picker**
      (dates after today are disabled) and click **Get Historical Rate**.
      The result appears below that button in the same sentence format.
@@ -183,7 +185,7 @@ fx-converter/
 └── README.md         # This file
 ```
 
-### `api.py` - generic API access
+### `api.py` — generic API access
 
 Contains one function and one exception, reused by `frankfurter.py`:
 
@@ -199,7 +201,7 @@ Contains one function and one exception, reused by `frankfurter.py`:
 
 ### `frankfurter.py` — Frankfurter-specific logic
 
-Uses `get_json()` from `api.py` to call three Frankfurter endpoints:
+Uses `get_json()` from `api.py` to call four Frankfurter endpoints:
 
 - **`get_currencies()`** — Calls `GET /currencies` and returns a
   dictionary mapping currency codes to full names, e.g.
@@ -215,10 +217,18 @@ Uses `get_json()` from `api.py` to call three Frankfurter endpoints:
   `(rate, date)` for that specific day. Raises `ApiError` if `on_date` is
   later than today. Also short-circuits to `(1.0, on_date)` for a
   same-currency selection.
-- **`_extract_rate(data, to_currency)`** — A private helper shared by the
-  two functions above. Safely reads the `rates` and `date` fields out of
-  the raw JSON response and raises `ApiError` with a clear message if
-  either is missing (for example, if `to_currency` is not a valid code).
+- **`get_time_series(from_currency, to_currency, start_date, end_date)`**
+  — Calls `GET /<start_date>..<end_date>?from=<from_currency>&to=<to_currency>`
+  and returns a dictionary mapping each date in the range to its rate,
+  e.g. `{"2023-01-02": 0.68, "2023-01-03": 0.681, ...}`. Used to draw the
+  "Rate Trend" chart. Returns an empty dictionary for a same-currency
+  pair (the rate would be a flat `1.0` for every day, which isn't a
+  useful chart).
+- **`_extract_rate(data, to_currency)`** — A private helper shared by
+  `get_latest_rate()` and `get_historical_rate()`. Safely reads the
+  `rates` and `date` fields out of the raw JSON response and raises
+  `ApiError` with a clear message if either is missing (for example, if
+  `to_currency` is not a valid code).
 
 ### `currency.py` — calculations and formatting
 
@@ -249,6 +259,12 @@ direct `requests` calls and no conversion maths itself:
 - **`display_conversion(rate, rate_date)`** — Calls `convert_amount()` and
   `format_conversion_result()` and shows the resulting sentence with
   `st.text()`.
+- **`display_rate_trend()`** — Calls `get_time_series()` for the selected
+  currency pair over the last `TREND_PERIOD_DAYS` (~3 years) and plots it
+  with `st.line_chart`. Does nothing if the currencies are the same or if
+  the series comes back empty, and shows a warning (not an error) instead
+  of crashing if the chart data can't be fetched, since the main
+  conversion result has already been shown by this point.
 
 The rest of `app.py` is the Streamlit layout itself: the title, the
 number input, the two currency select boxes, the "Get Latest Rate" and
@@ -301,7 +317,7 @@ for real Frankfurter replies, covering:
 
 - AUD → USD and USD → EUR conversions
 - A valid historical date (matching the brief's own worked AUD → BGN
-  example - the output matched exactly, including the 1.5565 inverse rate)
+  example — the output matched exactly, including the 1.5565 inverse rate)
 - An amount of `0`
 - Same source and destination currency
 - A simulated network failure
@@ -309,6 +325,9 @@ for real Frankfurter replies, covering:
 - Missing rate data for a currency
 - A future historical date
 - Division-by-zero safety in the inverse rate calculation
+- A 3-year time series for the rate trend chart, including the
+  same-currency case (returns an empty series instead of erroring) and a
+  malformed response (raises `ApiError` cleanly)
 
 `streamlit run app.py` was also run locally and confirmed to start the
 server and serve the page without errors. Live end-to-end calls to the

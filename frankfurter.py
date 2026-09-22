@@ -1,6 +1,9 @@
-"""
-Functions for talking to the Frankfurter currency API (https://www.frankfurter.app/). 
-Each function calls one endpoint and pulls out the values the rest of the app needs. 
+"""frankfurter.py
+
+Functions for talking to the Frankfurter currency API
+(https://www.frankfurter.app/). Each function calls one endpoint and
+pulls out the values the rest of the app needs. The actual HTTP work
+is done by api.py.
 """
 
 from datetime import date
@@ -76,6 +79,48 @@ def get_historical_rate(from_currency, to_currency, on_date):
     params = {"from": from_currency, "to": to_currency}
     data = get_json(f"{BASE_URL}/{on_date}", params=params)
     return _extract_rate(data, to_currency)
+
+
+def get_time_series(from_currency, to_currency, start_date, end_date):
+    """Retrieve a series of daily rates between two dates.
+
+    Used to plot the "Rate Trend" chart in the Streamlit app.
+
+    Args:
+        from_currency (str): Currency code to convert from.
+        to_currency (str): Currency code to convert to.
+        start_date (str or datetime.date): First date in the range.
+        end_date (str or datetime.date): Last date in the range.
+
+    Returns:
+        dict: Mapping of date string (e.g. "2023-07-10") to rate
+            (float), in the order returned by the API. Returns an
+            empty dict for a same-currency pair, since the rate would
+            be a flat 1.0 for every day.
+
+    Raises:
+        ApiError: If the time series cannot be retrieved.
+    """
+    if isinstance(start_date, date):
+        start_date = start_date.isoformat()
+    if isinstance(end_date, date):
+        end_date = end_date.isoformat()
+
+    if from_currency == to_currency:
+        return {}
+
+    params = {"from": from_currency, "to": to_currency}
+    data = get_json(f"{BASE_URL}/{start_date}..{end_date}", params=params)
+
+    rates_by_date = data.get("rates") if isinstance(data, dict) else None
+    if not isinstance(rates_by_date, dict):
+        raise ApiError("No rate history was returned by the API.")
+
+    series = {}
+    for day, day_rates in rates_by_date.items():
+        if isinstance(day_rates, dict) and to_currency in day_rates:
+            series[day] = float(day_rates[to_currency])
+    return series
 
 
 def _extract_rate(data, to_currency):

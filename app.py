@@ -1,10 +1,27 @@
-from datetime import date
+"""app.py
 
+Streamlit web app for the FX / Currency Converter. This file builds
+the user interface, collects user input, calls the other project
+modules to do the real work, and displays the results or any errors.
+It does not make HTTP requests or perform calculations itself.
+"""
+
+from datetime import date, timedelta
+
+import pandas as pd
 import streamlit as st
 
 from api import ApiError
-from frankfurter import get_currencies, get_historical_rate, get_latest_rate
+from frankfurter import (
+    get_currencies,
+    get_historical_rate,
+    get_latest_rate,
+    get_time_series,
+)
 from currency import convert_amount, format_conversion_result
+
+# How far back the "Rate Trend" chart looks, in days (roughly 3 years).
+TREND_PERIOD_DAYS = 3 * 365
 
 st.title("FX Converter")
 
@@ -65,6 +82,31 @@ def display_conversion(rate, rate_date):
     st.text(message)
 
 
+def display_rate_trend():
+    """Show a line chart of the rate over roughly the last 3 years."""
+    if from_currency == to_currency:
+        return
+
+    end_date = date.today()
+    start_date = end_date - timedelta(days=TREND_PERIOD_DAYS)
+
+    try:
+        series = get_time_series(from_currency, to_currency, start_date, end_date)
+    except ApiError as error:
+        st.warning(f"Could not load the rate trend chart: {error}")
+        return
+
+    if not series:
+        return
+
+    chart_data = pd.Series(series, name="Rate")
+    chart_data.index = pd.to_datetime(chart_data.index)
+    chart_data = chart_data.sort_index()
+
+    st.subheader("Rate Trend Over the Last 3 years")
+    st.line_chart(chart_data)
+
+
 st.subheader("Latest Conversion Rate")
 
 if st.button("Get Latest Rate"):
@@ -74,6 +116,7 @@ if st.button("Get Latest Rate"):
         try:
             rate, rate_date = get_latest_rate(from_currency, to_currency)
             display_conversion(rate, rate_date)
+            display_rate_trend()
         except ApiError as error:
             st.error(f"Could not get the latest conversion rate: {error}")
 
